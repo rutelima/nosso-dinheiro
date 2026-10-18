@@ -19,8 +19,8 @@
   <link rel="apple-touch-icon" sizes="120x120" href="icon.png?v=3">
   <link rel="icon" type="image/png" href="icon.png?v=3">
 
-  <!-- Estilos CSS (Versão v=4 para carregar a mistura Rosa + Azul no Saldo Geral) -->
-  <link rel="stylesheet" href="style.css?v=4">
+  <!-- Estilos CSS (Versão v=5 para novos componentes de limite e progresso) -->
+  <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 
@@ -29,6 +29,51 @@
       <h1>Nosso Dinheiro 💰</h1>
       <p>Resumo financeiro do casal</p>
     </header>
+
+    <!-- NOVO PAINEL: Gastos do Mês, Limite e Média Diária -->
+    <section class="card painel-limite-card">
+      <div class="header-limite">
+        <h2>Gastos do Mês</h2>
+        <div class="config-limite">
+          <label for="input-limite">Limite Mensal (R$):</label>
+          <input type="number" id="input-limite" step="50" placeholder="2800.00">
+        </div>
+      </div>
+
+      <div class="total-gastos-mes">
+        <span id="gastos-mes-valor">R$ 0,00</span>
+      </div>
+
+      <div class="pago-apagar-grid">
+        <div class="status-gasto">
+          <span class="label">Pago</span>
+          <span id="gastos-pago-valor" class="valor-status verde">R$ 0,00</span>
+        </div>
+        <div class="status-gasto">
+          <span class="label">A pagar</span>
+          <span id="gastos-apagar-valor" class="valor-status amarelo">R$ 0,00</span>
+        </div>
+      </div>
+
+      <!-- Barra de Progresso do Limite -->
+      <div class="barra-progresso-container">
+        <div class="barra-info">
+          <span id="texto-limite-percentual">0% do limite usado</span>
+          <span id="texto-limite-restante">Faltam R$ 0,00 para atingir o limite</span>
+        </div>
+        <div class="barra-trilho">
+          <div id="barra-preenchimento" class="barra-preenchimento" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- Quantia permitida por dia -->
+      <div class="caixa-diaria">
+        <div class="diaria-info">
+          <span class="titulo-diaria">Quanto posso gastar por dia sem me endividar?</span>
+          <span id="valor-gasto-diario" class="valor-diaria">R$ 0,00 <small>/dia</small></span>
+        </div>
+      </div>
+    </section>
 
     <!-- Formulário de Transação -->
     <section class="card form-card">
@@ -155,6 +200,6 @@
 
   </main>
 
-  <script type="module" src="script.js?v=16"></script>
+  <script type="module" src="script.js?v=17"></script>
 </body>
 </html>

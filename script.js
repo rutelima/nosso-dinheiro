@@ -1,170 +1,234 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// Configuração do Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyC5G-Tr3kcntYm4wosc5n361pJ4VSWFqys",
-  authDomain: "nosso-dinheiro-56ad7.firebaseapp.com",
-  projectId: "nosso-dinheiro-56ad7",
-  storageBucket: "nosso-dinheiro-56ad7.firebasestorage.app",
-  messagingSenderId: "903996625427",
-  appId: "1:903996625427:web:f097fcdc3cf8e1173ee5e6"
+  apiKey: "AIzaSyD-EXEMPLO-SuaKeyAqui",
+  authDomain: "meu-controle-financeiro.firebaseapp.com",
+  projectId: "meu-controle-financeiro",
+  storageBucket: "meu-controle-financeiro.appspot.com",
+  messagingSenderId: "1234567890",
+  appId: "1:1234567890:web:abcdef123456"
 };
 
+// Inicializa Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const transacoesRef = collection(db, "transacoes");
 
-const form = document.getElementById('form-transacao');
-const lista = document.getElementById('lista-transacoes');
-const totalEntradasEl = document.getElementById('total-entradas');
-const totalDespesasEl = document.getElementById('total-despesas');
-const saldoTotalEl = document.getElementById('saldo-total');
-const totalInvestimentosEl = document.getElementById('total-investimentos');
-const saldoRuteEl = document.getElementById('saldo-rute');
-const saldoVandersonEl = document.getElementById('saldo-vanderson');
-const faturaRuteEl = document.getElementById('fatura-rute');
-const faturaVandersonEl = document.getElementById('fatura-vanderson');
+// Referências aos Elementos do DOM
+const form = document.getElementById("form-transacao");
+const listaTransacoes = document.getElementById("lista-transacoes");
 
-let transacoes = [];
+// Elementos de Resumo Geral
+const totalEntradasEl = document.getElementById("total-entradas");
+const totalDespesasEl = document.getElementById("total-despesas");
+const saldoTotalEl = document.getElementById("saldo-total");
+const totalInvestimentosEl = document.getElementById("total-investimentos");
 
-function calcularSaldos() {
-  let entradasGeral = 0;
-  let despesasGeral = 0;
-  let investimentosGeral = 0;
-  
+// Elementos Individuais
+const saldoRuteEl = document.getElementById("saldo-rute");
+const saldoVandersonEl = document.getElementById("saldo-vanderson");
+const faturaRuteEl = document.getElementById("fatura-rute");
+const faturaVandersonEl = document.getElementById("fatura-vanderson");
+
+// Novos Elementos de Limite Mensal
+const gastosMesValorEl = document.getElementById("gastos-mes-valor");
+const gastosPagoValorEl = document.getElementById("gastos-pago-valor");
+const gastosApagarValorEl = document.getElementById("gastos-apagar-valor");
+const inputLimiteEl = document.getElementById("input-limite");
+const textoLimitePercentualEl = document.getElementById("texto-limite-percentual");
+const textoLimiteRestanteEl = document.getElementById("texto-limite-restante");
+const barraPreenchimentoEl = document.getElementById("barra-preenchimento");
+const valorGastoDiarioEl = document.getElementById("valor-gasto-diario");
+
+// Carrega Limite Salvo no LocalStorage (ou usa 2800.00 padrão)
+let limiteMensal = parseFloat(localStorage.getItem("limiteMensalCasal")) || 2800.00;
+if (inputLimiteEl) {
+  inputLimiteEl.value = limiteMensal.toFixed(2);
+  inputLimiteEl.addEventListener("change", (e) => {
+    const novoValor = parseFloat(e.target.value);
+    if (!isNaN(novoValor) && novoValor > 0) {
+      limiteMensal = novoValor;
+      localStorage.setItem("limiteMensalCasal", limiteMensal);
+      atualizarTotais(transacoesGlobais);
+    }
+  });
+}
+
+let transacoesGlobais = [];
+
+// Formata Valor para R$
+function formatarMoeda(valor) {
+  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+// Adicionar Transação
+if (form) {
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const descricao = document.getElementById("descricao").value;
+    const valor = parseFloat(document.getElementById("valor").value);
+    const tipo = document.getElementById("tipo").value;
+    const responsavel = document.getElementById("responsavel").value;
+    const categoria = document.getElementById("categoria").value;
+    const metodo = document.getElementById("metodo").value;
+    const status = document.getElementById("status").value;
+
+    try {
+      await addDoc(collection(db, "transacoes"), {
+        descricao,
+        valor,
+        tipo,
+        responsavel,
+        categoria,
+        metodo,
+        status,
+        data: new Date()
+      });
+      form.reset();
+    } catch (erro) {
+      console.error("Erro ao adicionar transação: ", erro);
+    }
+  });
+}
+
+// Ler Transações em Tempo Real
+onSnapshot(collection(db, "transacoes"), (snapshot) => {
+  transacoesGlobais = [];
+  listaTransacoes.innerHTML = "";
+
+  snapshot.forEach((docSnapshot) => {
+    const item = docSnapshot.data();
+    item.id = docSnapshot.id;
+    transacoesGlobais.push(item);
+    exibirTransacao(item);
+  });
+
+  atualizarTotais(transacoesGlobais);
+});
+
+// Exibir Transação na Lista
+function exibirTransacao(item) {
+  const li = document.createElement("li");
+  li.className = `item-transacao ${item.tipo}`;
+
+  const iconeStatus = item.status === "Concluído" ? "✅" : "⏳";
+  const sinal = item.tipo === "despesa" ? "-" : "+";
+
+  li.innerHTML = `
+    <div>
+      <strong>${item.descricao}</strong>
+      <small>${item.categoria} • ${item.metodo} • 👤 ${item.responsavel} ${iconeStatus} ${item.status}</small>
+    </div>
+    <div>
+      <span class="valor ${item.tipo === "despesa" ? "negativo" : "positivo"}">
+        ${sinal} ${formatarMoeda(item.valor)}
+      </span>
+      <button class="btn-deletar" data-id="${item.id}" style="border:none; background:none; cursor:pointer; margin-left:10px;">🗑️</button>
+    </div>
+  `;
+
+  listaTransacoes.prepend(li);
+
+  li.querySelector(".btn-deletar").addEventListener("click", async (e) => {
+    const id = e.target.getAttribute("data-id");
+    await deleteDoc(doc(db, "transacoes", id));
+  });
+}
+
+// Atualizar Todos os Totais do Painel
+function atualizarTotais(transacoes) {
+  let entradas = 0;
+  let despesas = 0;
+  let investimentos = 0;
+
   let saldoRute = 0;
   let saldoVanderson = 0;
-
   let faturaRute = 0;
   let faturaVanderson = 0;
 
-  transacoes.forEach(t => {
-    const valor = Number(t.valor) || 0;
-    const tipo = t.tipo || 'despesa';
-    const resp = t.responsavel || 'Rute';
-    const metodo = t.metodo || 'PIX';
+  let gastosPago = 0;
+  let gastosApagar = 0;
 
-    // Se for Cartão de Crédito e Despesa, lança na fatura do responsável (não desfalca a conta no momento)
-    if (metodo === 'Cartão de Crédito' && tipo === 'despesa') {
-      if (resp === 'Rute') faturaRute += valor;
-      if (resp === 'Vanderson') faturaVanderson += valor;
-      // Registramos na despesa geral para controle orçamentário do mês
-      despesasGeral += valor;
-      return; // Sai da iteração para não descontar do saldo bancário atual
-    }
+  transacoes.forEach((item) => {
+    const v = item.valor;
 
-    // Lançamentos normais (PIX, Débito, Dinheiro ou Entradas/Investimentos)
-    if (tipo === 'entrada') entradasGeral += valor;
-    if (tipo === 'despesa') despesasGeral += valor;
-    if (tipo === 'investimento') investimentosGeral += valor;
+    if (item.tipo === "entrada") {
+      entradas += v;
+      if (item.responsavel === "Rute") saldoRute += v;
+      if (item.responsavel === "Vanderson") saldoVanderson += v;
+    } else if (item.tipo === "despesa") {
+      despesas += v;
 
-    // Saldo Individual Rute
-    if (resp === 'Rute') {
-      if (tipo === 'entrada') saldoRute += valor;
-      if (tipo === 'despesa' || tipo === 'investimento') saldoRute -= valor;
-    }
+      // Classifica Pago vs A Pagar
+      if (item.status === "Concluído") {
+        gastosPago += v;
+      } else {
+        gastosApagar += v;
+      }
 
-    // Saldo Individual Vanderson
-    if (resp === 'Vanderson') {
-      if (tipo === 'entrada') saldoVanderson += valor;
-      if (tipo === 'despesa' || tipo === 'investimento') saldoVanderson -= valor;
+      // Saldos Individuais
+      if (item.responsavel === "Rute") saldoRute -= v;
+      if (item.responsavel === "Vanderson") saldoVanderson -= v;
+
+      // Faturas de Cartão de Crédito
+      if (item.metodo === "Cartão de Crédito") {
+        if (item.responsavel === "Rute") faturaRute += v;
+        if (item.responsavel === "Vanderson") faturaVanderson += v;
+      }
+    } else if (item.tipo === "investimento") {
+      investimentos += v;
+      if (item.responsavel === "Rute") saldoRute -= v;
+      if (item.responsavel === "Vanderson") saldoVanderson -= v;
     }
   });
 
-  const saldoGeral = saldoRute + saldoVanderson;
+  const saldoGeral = entradas - despesas - investimentos;
 
-  // Atualização no HTML
-  if (totalEntradasEl) totalEntradasEl.textContent = `R$ ${entradasGeral.toFixed(2)}`;
-  if (totalDespesasEl) totalDespesasEl.textContent = `R$ ${despesasGeral.toFixed(2)}`;
-  if (saldoTotalEl) saldoTotalEl.textContent = `R$ ${saldoGeral.toFixed(2)}`;
-  if (totalInvestimentosEl) totalInvestimentosEl.textContent = `R$ ${investimentosGeral.toFixed(2)}`;
-  
-  if (saldoRuteEl) saldoRuteEl.textContent = `R$ ${saldoRute.toFixed(2)}`;
-  if (saldoVandersonEl) saldoVandersonEl.textContent = `R$ ${saldoVanderson.toFixed(2)}`;
-  
-  if (faturaRuteEl) faturaRuteEl.textContent = `R$ ${faturaRute.toFixed(2)}`;
-  if (faturaVandersonEl) faturaVandersonEl.textContent = `R$ ${faturaVanderson.toFixed(2)}`;
-}
+  // Atualiza Valores Gerais
+  totalEntradasEl.textContent = formatarMoeda(entradas);
+  totalDespesasEl.textContent = formatarMoeda(despesas);
+  saldoTotalEl.textContent = formatarMoeda(saldoGeral);
+  totalInvestimentosEl.textContent = formatarMoeda(investimentos);
 
-window.removerTransacao = async function(id) {
-  try {
-    await deleteDoc(doc(db, "transacoes", id));
-  } catch (error) {
-    console.error("Erro ao apagar:", error);
+  // Atualiza Saldos Individuais e Faturas
+  saldoRuteEl.textContent = formatarMoeda(saldoRute);
+  saldoVandersonEl.textContent = formatarMoeda(saldoVanderson);
+  faturaRuteEl.textContent = formatarMoeda(faturaRute);
+  faturaVandersonEl.textContent = formatarMoeda(faturaVanderson);
+
+  // NOVO PAINEL DE GASTOS E LIMITE MENSAL
+  gastosMesValorEl.textContent = formatarMoeda(despesas);
+  gastosPagoValorEl.textContent = formatarMoeda(gastosPago);
+  gastosApagarValorEl.textContent = formatarMoeda(gastosApagar);
+
+  // Cálculo da Porcentagem e Barra de Progresso
+  const percentualUsado = Math.min(Math.round((despesas / limiteMensal) * 100), 100);
+  textoLimitePercentualEl.textContent = `${percentualUsado}% do limite usado (Limite: ${formatarMoeda(limiteMensal)})`;
+
+  barraPreenchimentoEl.style.width = `${percentualUsado}%`;
+  if (percentualUsado >= 90) {
+    barraPreenchimentoEl.classList.add("perigo");
+  } else {
+    barraPreenchimentoEl.classList.remove("perigo");
   }
-};
 
-function renderizarLista() {
-  lista.innerHTML = '';
-  if (transacoes.length === 0) {
-    lista.innerHTML = '<li style="text-align: center; color: #888; padding: 15px;">Nenhuma transação cadastrada. Adicione os saldos iniciais acima! 🚀</li>';
-    return;
+  // Quanto falta para o limite
+  const quantoFalta = limiteMensal - despesas;
+  if (quantoFalta >= 0) {
+    textoLimiteRestanteEl.textContent = `Faltam ${formatarMoeda(quantoFalta)} para atingir o limite`;
+  } else {
+    textoLimiteRestanteEl.textContent = `Atenção: Limite ultrapassado em ${formatarMoeda(Math.abs(quantoFalta))}`;
   }
 
-  transacoes.forEach((t) => {
-    const li = document.createElement('li');
-    li.classList.add(t.tipo || 'despesa');
-    
-    const statusText = t.status || 'Concluído';
-    const statusTag = statusText === 'Pendente' 
-      ? `<span class="badge badge-pendente">⏳ Pendente</span>` 
-      : `<span class="badge badge-pago">✅ Pago</span>`;
+  // Cálculo de Média Diária Restante até ao fim do mês
+  const hoje = new Date();
+  const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
+  const diasRestantes = Math.max(ultimoDiaMes - hoje.getDate() + 1, 1);
 
-    const respText = t.responsavel ? ` • 👤 ${t.responsavel}` : ' • 👤 Rute';
-    const catText = t.categoria || 'Geral';
-    const metText = t.metodo || 'PIX';
-    const valNum = Number(t.valor) || 0;
+  const saldoParaGastar = Math.max(quantoFalta, 0);
+  const mediaDiaria = saldoParaGastar / diasRestantes;
 
-    li.innerHTML = `
-      <div class="info-item">
-        <strong>${t.descricao || 'Sem descrição'}</strong>
-        <small>${catText} • ${metText}${respText} ${statusTag}</small>
-      </div>
-      <div class="acoes-item">
-        <strong>R$ ${valNum.toFixed(2)}</strong>
-        <button class="btn-apagar" onclick="removerTransacao('${t.id}')" title="Apagar">🗑️</button>
-      </div>
-    `;
-    lista.appendChild(li);
-  });
-}
-
-onSnapshot(transacoesRef, (snapshot) => {
-  transacoes = snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
-  renderizarLista();
-  calcularSaldos();
-}, (error) => {
-  console.error("Erro ao sincronizar:", error);
-});
-
-if (form) {
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const descricao = document.getElementById('descricao').value;
-    const valor = parseFloat(document.getElementById('valor').value);
-    const tipo = document.getElementById('tipo').value;
-    const responsavel = document.getElementById('responsavel').value;
-    const categoria = document.getElementById('categoria').value;
-    const metodo = document.getElementById('metodo').value;
-    const status = document.getElementById('status').value;
-
-    try {
-      await addDoc(transacoesRef, { 
-        descricao, 
-        valor, 
-        tipo, 
-        responsavel,
-        categoria, 
-        metodo, 
-        status,
-        data: new Date().toISOString()
-      });
-      form.reset();
-    } catch (error) {
-      console.error("Erro ao salvar:", error);
-    }
-  });
+  valorGastoDiarioEl.innerHTML = `${formatarMoeda(mediaDiaria)} <small>/dia (${diasRestantes} dias restantes)</small>`;
 }

@@ -76,6 +76,9 @@ let unsubscribeFirestore = null;
 let usuarioAtual = null;
 let transacoesGlobais = [];
 
+// E-mail principal do casal que herda o histórico antigo
+const EMAIL_CASAL_PRINCIPAL = "rutecunhalima@icloud.com";
+
 // Configuração de Nomes e Perfis Padrão
 let configPerfil = {
   modo: "dupla",
@@ -140,7 +143,6 @@ function aplicarConfiguracaoPerfil() {
   inputNomePerfil1.value = configPerfil.nome1;
   inputNomePerfil2.value = configPerfil.nome2 || "";
 
-  // Atualiza Opções do Select
   selectResponsavel.innerHTML = "";
   const opt1 = document.createElement("option");
   opt1.value = configPerfil.nome1;
@@ -162,7 +164,6 @@ function aplicarConfiguracaoPerfil() {
     cardFatura2.style.display = "none";
   }
 
-  // Atualiza Títulos
   tituloSaldo1.textContent = `Saldo ${configPerfil.nome1}`;
   tituloFatura1.textContent = `💳 Fatura ${configPerfil.nome1}`;
 
@@ -192,7 +193,7 @@ btnToggleAuth.addEventListener("click", () => {
 // Submit de Login/Cadastro
 formAuth.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const email = authEmailInput.value;
+  const email = authEmailInput.value.trim();
   const senha = authSenhaInput.value;
   authErroEl.style.display = "none";
 
@@ -207,7 +208,7 @@ formAuth.addEventListener("submit", async (e) => {
     if (erro.code === "auth/invalid-credential" || erro.code === "auth/wrong-password") {
       authErroEl.textContent = "E-mail ou senha incorretos.";
     } else if (erro.code === "auth/email-already-in-use") {
-      authErroEl.textContent = "Este e-mail já está cadastrado.";
+      authErroEl.textContent = "Este e-mail já está cadastrado. Clique em 'Fazer Login'.";
     } else if (erro.code === "auth/weak-password") {
       authErroEl.textContent = "A senha deve ter pelo menos 6 caracteres.";
     } else {
@@ -234,12 +235,11 @@ onAuthStateChanged(auth, async (user) => {
     if (docSnap.exists()) {
       configPerfil = docSnap.data();
     } else {
-      // Padrão
       configPerfil = { modo: "dupla", nome1: "Rute", nome2: "Vanderson" };
     }
     aplicarConfiguracaoPerfil();
 
-    carregarTransacoesDoUsuario(user.uid);
+    carregarTransacoesDoUsuario(user);
   } else {
     usuarioAtual = null;
     secaoAuth.classList.remove("esconde-app");
@@ -248,18 +248,25 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-function carregarTransacoesDoUsuario(userId) {
-  const q = query(collection(db, "transacoes"), where("userId", "==", userId));
+// Carregar Dados Isolados (e herdar histórico antigo se for o e-mail do casal)
+function carregarTransacoesDoUsuario(user) {
+  const isCasalPrincipal = user.email.toLowerCase() === EMAIL_CASAL_PRINCIPAL.toLowerCase();
 
-  unsubscribeFirestore = onSnapshot(q, (snapshot) => {
+  unsubscribeFirestore = onSnapshot(collection(db, "transacoes"), (snapshot) => {
     transacoesGlobais = [];
     listaTransacoes.innerHTML = "";
 
     snapshot.forEach((docSnapshot) => {
       const item = docSnapshot.data();
       item.id = docSnapshot.id;
-      transacoesGlobais.push(item);
-      exibirTransacao(item);
+
+      const pertenceAoUsuario = item.userId === user.uid;
+      const ehHistoricoAntigoSemUserId = isCasalPrincipal && !item.userId;
+
+      if (pertenceAoUsuario || ehHistoricoAntigoSemUserId) {
+        transacoesGlobais.push(item);
+        exibirTransacao(item);
+      }
     });
 
     atualizarTotais(transacoesGlobais);

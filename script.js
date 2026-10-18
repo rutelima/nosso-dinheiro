@@ -336,16 +336,19 @@ function exibirTransacao(item) {
 
 function atualizarTotais(transacoes) {
   let entradas = 0;
-  let despesas = 0;
+  let despesasGerais = 0;
   let investimentos = 0;
+
+  let despesasPerfil1 = 0;
+  let despesasPerfil2 = 0;
 
   let saldoPerfil1 = 0;
   let saldoPerfil2 = 0;
   let faturaPerfil1 = 0;
   let faturaPerfil2 = 0;
 
-  let gastosPago = 0;
-  let gastosApagar = 0;
+  let gastosPagoPerfil1 = 0;
+  let gastosApagarPerfil1 = 0;
 
   transacoes.forEach((item) => {
     const v = item.valor;
@@ -355,20 +358,28 @@ function atualizarTotais(transacoes) {
       if (item.responsavel === configPerfil.nome1) saldoPerfil1 += v;
       if (item.responsavel === configPerfil.nome2) saldoPerfil2 += v;
     } else if (item.tipo === "despesa") {
-      despesas += v;
+      despesasGerais += v;
 
-      if (item.status === "Concluído") {
-        gastosPago += v;
-      } else {
-        gastosApagar += v;
-      }
+      if (item.responsavel === configPerfil.nome1) {
+        despesasPerfil1 += v;
+        saldoPerfil1 -= v;
 
-      if (item.responsavel === configPerfil.nome1) saldoPerfil1 -= v;
-      if (item.responsavel === configPerfil.nome2) saldoPerfil2 -= v;
+        if (item.status === "Concluído") {
+          gastosPagoPerfil1 += v;
+        } else {
+          gastosApagarPerfil1 += v;
+        }
 
-      if (item.metodo === "Cartão de Crédito") {
-        if (item.responsavel === configPerfil.nome1) faturaPerfil1 += v;
-        if (item.responsavel === configPerfil.nome2) faturaPerfil2 += v;
+        if (item.metodo === "Cartão de Crédito") {
+          faturaPerfil1 += v;
+        }
+      } else if (item.responsavel === configPerfil.nome2) {
+        despesasPerfil2 += v;
+        saldoPerfil2 -= v;
+
+        if (item.metodo === "Cartão de Crédito") {
+          faturaPerfil2 += v;
+        }
       }
     } else if (item.tipo === "investimento") {
       investimentos += v;
@@ -377,10 +388,11 @@ function atualizarTotais(transacoes) {
     }
   });
 
-  const saldoGeral = entradas - despesas - investimentos;
+  const saldoGeral = entradas - despesasGerais - investimentos;
 
+  // Atualização dos Cards Inferiores
   totalEntradasEl.textContent = formatarMoeda(entradas);
-  totalDespesasEl.textContent = formatarMoeda(despesas);
+  totalDespesasEl.textContent = formatarMoeda(despesasGerais);
   saldoTotalEl.textContent = formatarMoeda(saldoGeral);
   totalInvestimentosEl.textContent = formatarMoeda(investimentos);
 
@@ -389,11 +401,12 @@ function atualizarTotais(transacoes) {
   faturaPerfil1El.textContent = formatarMoeda(faturaPerfil1);
   faturaPerfil2El.textContent = formatarMoeda(faturaPerfil2);
 
-  gastosMesValorEl.textContent = formatarMoeda(despesas);
-  gastosPagoValorEl.textContent = formatarMoeda(gastosPago);
-  gastosApagarValorEl.textContent = formatarMoeda(gastosApagar);
+  // PAINEL ROXO: Filtra unicamente os gastos do Perfil 1 (Rute)
+  gastosMesValorEl.textContent = formatarMoeda(despesasPerfil1);
+  gastosPagoValorEl.textContent = formatarMoeda(gastosPagoPerfil1);
+  gastosApagarValorEl.textContent = formatarMoeda(gastosApagarPerfil1);
 
-  const percentualUsado = Math.min(Math.round((despesas / limiteMensal) * 100), 100);
+  const percentualUsado = Math.min(Math.round((despesasPerfil1 / limiteMensal) * 100), 100);
   textoLimitePercentualEl.textContent = `${percentualUsado}% do limite usado (Limite: ${formatarMoeda(limiteMensal)})`;
 
   barraPreenchimentoEl.style.width = `${percentualUsado}%`;
@@ -403,7 +416,7 @@ function atualizarTotais(transacoes) {
     barraPreenchimentoEl.classList.remove("perigo");
   }
 
-  const quantoFalta = limiteMensal - despesas;
+  const quantoFalta = limiteMensal - despesasPerfil1;
   if (quantoFalta >= 0) {
     textoLimiteRestanteEl.textContent = `Faltam ${formatarMoeda(quantoFalta)} para atingir o limite`;
   } else {

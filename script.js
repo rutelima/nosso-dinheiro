@@ -1,14 +1,13 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Configuração do Firebase com as suas credenciais reais
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY_REAL_AQUI",
-  authDomain: "meu-controle-financeiro.firebaseapp.com",
-  projectId: "meu-controle-financeiro",
-  storageBucket: "meu-controle-financeiro.appspot.com",
-  messagingSenderId: "SEU_MESSAGING_SENDER_ID",
-  appId: "SEU_APP_ID"
+  apiKey: "AIzaSyC5G-Tr3kcntYm4wosc5n361pJ4VSWFqys",
+  authDomain: "nosso-dinheiro-56ad7.firebaseapp.com",
+  projectId: "nosso-dinheiro-56ad7",
+  storageBucket: "nosso-dinheiro-56ad7.firebasestorage.app",
+  messagingSenderId: "903996625427",
+  appId: "1:903996625427:web:f097fcdc3cf8e1173ee5e6"
 };
 
 // Inicializa Firebase

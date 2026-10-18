@@ -96,6 +96,64 @@ body {
   font-weight: 600;
 }
 
+/* CONFIGURAÇÃO DE NOMES E PERFIS */
+.config-perfis-card {
+  background: #fff;
+  border-left: 4px solid #be185d;
+}
+
+.header-config {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-config h2 {
+  font-size: 1rem;
+  color: #881337;
+}
+
+.btn-subtil {
+  background: none;
+  border: 1px solid #fbcfe8;
+  padding: 5px 10px;
+  border-radius: 6px;
+  color: #be185d;
+  font-size: 0.8rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.corpo-config {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #f472b6;
+}
+
+.esconde-config {
+  display: none !important;
+}
+
+.grid-nomes-perfis {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btn-salvar-sm {
+  background: #be185d;
+  color: #fff;
+  border: none;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
 /* ESTRUTURA PRINCIPAL */
 .container {
   width: 100%;

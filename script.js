@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, where, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // Credenciais Reais do Firebase do Casal
@@ -31,6 +31,29 @@ const textoToggle = document.getElementById("texto-toggle");
 const usuarioLogadoEmail = document.getElementById("usuario-logado-email");
 const btnLogout = document.getElementById("btn-logout");
 
+// Referências de Configuração de Nomes
+const btnToggleConfig = document.getElementById("btn-toggle-config");
+const formConfigPerfis = document.getElementById("form-config-perfis");
+const selectModoUso = document.getElementById("modo-uso");
+const inputNomePerfil1 = document.getElementById("nome-perfil-1");
+const inputNomePerfil2 = document.getElementById("nome-perfil-2");
+const containerPerfil2 = document.getElementById("container-perfil-2");
+const selectResponsavel = document.getElementById("responsavel");
+
+// Elementos de Saldos Individuais / Faturas
+const tituloSaldo1 = document.getElementById("titulo-saldo-1");
+const tituloSaldo2 = document.getElementById("titulo-saldo-2");
+const saldoPerfil1El = document.getElementById("saldo-perfil-1");
+const saldoPerfil2El = document.getElementById("saldo-perfil-2");
+const cardSaldo2 = document.getElementById("card-saldo-2");
+
+const tituloFatura1 = document.getElementById("titulo-fatura-1");
+const tituloFatura2 = document.getElementById("titulo-fatura-2");
+const faturaPerfil1El = document.getElementById("fatura-perfil-1");
+const faturaPerfil2El = document.getElementById("fatura-perfil-2");
+const cardFatura2 = document.getElementById("card-fatura-2");
+
+// Elementos de Painel Geral
 const form = document.getElementById("form-transacao");
 const listaTransacoes = document.getElementById("lista-transacoes");
 
@@ -38,11 +61,6 @@ const totalEntradasEl = document.getElementById("total-entradas");
 const totalDespesasEl = document.getElementById("total-despesas");
 const saldoTotalEl = document.getElementById("saldo-total");
 const totalInvestimentosEl = document.getElementById("total-investimentos");
-
-const saldoRuteEl = document.getElementById("saldo-rute");
-const saldoVandersonEl = document.getElementById("saldo-vanderson");
-const faturaRuteEl = document.getElementById("fatura-rute");
-const faturaVandersonEl = document.getElementById("fatura-vanderson");
 
 const gastosMesValorEl = document.getElementById("gastos-mes-valor");
 const gastosPagoValorEl = document.getElementById("gastos-pago-valor");
@@ -56,6 +74,14 @@ const valorGastoDiarioEl = document.getElementById("valor-gasto-diario");
 let modoCadastro = false;
 let unsubscribeFirestore = null;
 let usuarioAtual = null;
+let transacoesGlobais = [];
+
+// Configuração de Nomes e Perfis Padrão
+let configPerfil = {
+  modo: "dupla",
+  nome1: "Rute",
+  nome2: "Vanderson"
+};
 
 let limiteMensal = parseFloat(localStorage.getItem("limiteMensalCasal")) || 2800.00;
 if (inputLimiteEl) {
@@ -70,13 +96,83 @@ if (inputLimiteEl) {
   });
 }
 
-let transacoesGlobais = [];
-
 function formatarMoeda(valor) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-// Alternar entre Login e Cadastro
+// Toggle do Menu de Configuração de Nomes
+btnToggleConfig.addEventListener("click", () => {
+  formConfigPerfis.classList.toggle("esconde-config");
+});
+
+selectModoUso.addEventListener("change", (e) => {
+  if (e.target.value === "individual") {
+    containerPerfil2.style.display = "none";
+  } else {
+    containerPerfil2.style.display = "flex";
+  }
+});
+
+// Salvar Configurações de Nome no Firestore por Usuário
+formConfigPerfis.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!usuarioAtual) return;
+
+  configPerfil = {
+    modo: selectModoUso.value,
+    nome1: inputNomePerfil1.value.trim() || "Integrante 1",
+    nome2: selectModoUso.value === "individual" ? "" : (inputNomePerfil2.value.trim() || "Integrante 2")
+  };
+
+  try {
+    await setDoc(doc(db, "configuracoes_usuario", usuarioAtual.uid), configPerfil);
+    aplicarConfiguracaoPerfil();
+    atualizarTotais(transacoesGlobais);
+    formConfigPerfis.classList.add("esconde-config");
+  } catch (err) {
+    console.error("Erro ao salvar perfil:", err);
+  }
+});
+
+// Aplicar nomes na Interface e no Select do Formulário
+function aplicarConfiguracaoPerfil() {
+  selectModoUso.value = configPerfil.modo;
+  inputNomePerfil1.value = configPerfil.nome1;
+  inputNomePerfil2.value = configPerfil.nome2 || "";
+
+  // Atualiza Opções do Select
+  selectResponsavel.innerHTML = "";
+  const opt1 = document.createElement("option");
+  opt1.value = configPerfil.nome1;
+  opt1.textContent = `👤 ${configPerfil.nome1}`;
+  selectResponsavel.appendChild(opt1);
+
+  if (configPerfil.modo === "dupla" && configPerfil.nome2) {
+    const opt2 = document.createElement("option");
+    opt2.value = configPerfil.nome2;
+    opt2.textContent = `👤 ${configPerfil.nome2}`;
+    selectResponsavel.appendChild(opt2);
+
+    containerPerfil2.style.display = "flex";
+    cardSaldo2.style.display = "block";
+    cardFatura2.style.display = "block";
+  } else {
+    containerPerfil2.style.display = "none";
+    cardSaldo2.style.display = "none";
+    cardFatura2.style.display = "none";
+  }
+
+  // Atualiza Títulos
+  tituloSaldo1.textContent = `Saldo ${configPerfil.nome1}`;
+  tituloFatura1.textContent = `💳 Fatura ${configPerfil.nome1}`;
+
+  if (configPerfil.nome2) {
+    tituloSaldo2.textContent = `Saldo ${configPerfil.nome2}`;
+    tituloFatura2.textContent = `💳 Fatura ${configPerfil.nome2}`;
+  }
+}
+
+// Toggle de Login / Cadastro
 btnToggleAuth.addEventListener("click", () => {
   modoCadastro = !modoCadastro;
   authErroEl.style.display = "none";
@@ -93,7 +189,7 @@ btnToggleAuth.addEventListener("click", () => {
   }
 });
 
-// Lógica de Login / Cadastro
+// Submit de Login/Cadastro
 formAuth.addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = authEmailInput.value;
@@ -120,18 +216,28 @@ formAuth.addEventListener("submit", async (e) => {
   }
 });
 
-// Logout
 btnLogout.addEventListener("click", () => {
   signOut(auth);
 });
 
-// Monitorar Estado de Login
-onAuthStateChanged(auth, (user) => {
+// Monitora Autenticação
+onAuthStateChanged(auth, async (user) => {
   if (user) {
     usuarioAtual = user;
     secaoAuth.classList.add("esconde-app");
     appPrincipal.classList.remove("esconde-app");
     usuarioLogadoEmail.textContent = `Conectado como: ${user.email}`;
+
+    // Carrega Configurações do Usuário
+    const docRef = doc(db, "configuracoes_usuario", user.uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      configPerfil = docSnap.data();
+    } else {
+      // Padrão
+      configPerfil = { modo: "dupla", nome1: "Rute", nome2: "Vanderson" };
+    }
+    aplicarConfiguracaoPerfil();
 
     carregarTransacoesDoUsuario(user.uid);
   } else {
@@ -142,7 +248,6 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-// Carregar Dados Isolados por Usuário
 function carregarTransacoesDoUsuario(userId) {
   const q = query(collection(db, "transacoes"), where("userId", "==", userId));
 
@@ -161,7 +266,7 @@ function carregarTransacoesDoUsuario(userId) {
   });
 }
 
-// Adicionar Transação com vínculo do Usuário (userId)
+// Adicionar Transação
 if (form) {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -227,10 +332,10 @@ function atualizarTotais(transacoes) {
   let despesas = 0;
   let investimentos = 0;
 
-  let saldoRute = 0;
-  let saldoVanderson = 0;
-  let faturaRute = 0;
-  let faturaVanderson = 0;
+  let saldoPerfil1 = 0;
+  let saldoPerfil2 = 0;
+  let faturaPerfil1 = 0;
+  let faturaPerfil2 = 0;
 
   let gastosPago = 0;
   let gastosApagar = 0;
@@ -240,8 +345,8 @@ function atualizarTotais(transacoes) {
 
     if (item.tipo === "entrada") {
       entradas += v;
-      if (item.responsavel === "Rute") saldoRute += v;
-      if (item.responsavel === "Vanderson") saldoVanderson += v;
+      if (item.responsavel === configPerfil.nome1) saldoPerfil1 += v;
+      if (item.responsavel === configPerfil.nome2) saldoPerfil2 += v;
     } else if (item.tipo === "despesa") {
       despesas += v;
 
@@ -251,17 +356,17 @@ function atualizarTotais(transacoes) {
         gastosApagar += v;
       }
 
-      if (item.responsavel === "Rute") saldoRute -= v;
-      if (item.responsavel === "Vanderson") saldoVanderson -= v;
+      if (item.responsavel === configPerfil.nome1) saldoPerfil1 -= v;
+      if (item.responsavel === configPerfil.nome2) saldoPerfil2 -= v;
 
       if (item.metodo === "Cartão de Crédito") {
-        if (item.responsavel === "Rute") faturaRute += v;
-        if (item.responsavel === "Vanderson") faturaVanderson += v;
+        if (item.responsavel === configPerfil.nome1) faturaPerfil1 += v;
+        if (item.responsavel === configPerfil.nome2) faturaPerfil2 += v;
       }
     } else if (item.tipo === "investimento") {
       investimentos += v;
-      if (item.responsavel === "Rute") saldoRute -= v;
-      if (item.responsavel === "Vanderson") saldoVanderson -= v;
+      if (item.responsavel === configPerfil.nome1) saldoPerfil1 -= v;
+      if (item.responsavel === configPerfil.nome2) saldoPerfil2 -= v;
     }
   });
 
@@ -272,10 +377,10 @@ function atualizarTotais(transacoes) {
   saldoTotalEl.textContent = formatarMoeda(saldoGeral);
   totalInvestimentosEl.textContent = formatarMoeda(investimentos);
 
-  saldoRuteEl.textContent = formatarMoeda(saldoRute);
-  saldoVandersonEl.textContent = formatarMoeda(saldoVanderson);
-  faturaRuteEl.textContent = formatarMoeda(faturaRute);
-  faturaVandersonEl.textContent = formatarMoeda(faturaVanderson);
+  saldoPerfil1El.textContent = formatarMoeda(saldoPerfil1);
+  saldoPerfil2El.textContent = formatarMoeda(saldoPerfil2);
+  faturaPerfil1El.textContent = formatarMoeda(faturaPerfil1);
+  faturaPerfil2El.textContent = formatarMoeda(faturaPerfil2);
 
   gastosMesValorEl.textContent = formatarMoeda(despesas);
   gastosPagoValorEl.textContent = formatarMoeda(gastosPago);

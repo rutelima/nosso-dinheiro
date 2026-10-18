@@ -16,8 +16,8 @@
   <link rel="apple-touch-icon" href="icon.png?v=3">
   <link rel="icon" type="image/png" href="icon.png?v=3">
 
-  <!-- Estilos CSS (v=6) -->
-  <link rel="stylesheet" href="style.css?v=6">
+  <!-- Estilos CSS (v=7) -->
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 
@@ -50,7 +50,7 @@
     </div>
   </div>
 
-  <!-- CONTEÚDO DO APLICATIVO (Inicia Oculto até Fazer Login) -->
+  <!-- CONTEÚDO DO APLICATIVO -->
   <main id="app-principal" class="container esconde-app">
     <header class="header-com-usuario">
       <div>
@@ -59,6 +59,38 @@
       </div>
       <button id="btn-logout" class="btn-logout">Sair 🚪</button>
     </header>
+
+    <!-- CONFIGURAÇÕES DE PERFIL E NOMES -->
+    <section class="card config-perfis-card">
+      <div class="header-config">
+        <h2>⚙️ Configuração de Perfil</h2>
+        <button id="btn-toggle-config" class="btn-subtil">Editar Nomes ✏️</button>
+      </div>
+      
+      <form id="form-config-perfis" class="corpo-config esconde-config">
+        <div class="grupo-input">
+          <label for="modo-uso">Modo de Uso:</label>
+          <select id="modo-uso">
+            <option value="dupla">👥 Casal / Dupla</option>
+            <option value="individual">👤 Individual (Apenas uma pessoa)</option>
+          </select>
+        </div>
+
+        <div class="grid-nomes-perfis">
+          <div class="grupo-input">
+            <label for="nome-perfil-1">Nome do Integrante 1:</label>
+            <input type="text" id="nome-perfil-1" value="Rute" required>
+          </div>
+
+          <div class="grupo-input" id="container-perfil-2">
+            <label for="nome-perfil-2">Nome do Integrante 2:</label>
+            <input type="text" id="nome-perfil-2" value="Vanderson">
+          </div>
+        </div>
+
+        <button type="submit" class="btn-salvar-sm">Salvar Preferências</button>
+      </form>
+    </section>
 
     <!-- PAINEL: Gastos do Mês, Limite e Média Diária -->
     <section class="card painel-limite-card">
@@ -96,7 +128,7 @@
         </div>
       </div>
 
-      <!-- Quantia permitida por dia -->
+      <!-- Média Diária -->
       <div class="caixa-diaria">
         <div class="diaria-info">
           <span class="titulo-diaria">Quanto posso gastar por dia sem me endividar?</span>
@@ -131,8 +163,7 @@
         <div class="grupo-input">
           <label for="responsavel">Responsável:</label>
           <select id="responsavel" required>
-            <option value="Rute">👩 Rute</option>
-            <option value="Vanderson">👨 Vanderson</option>
+            <!-- Opções geradas dinamicamente via JS -->
           </select>
         </div>
 
@@ -195,33 +226,33 @@
       </div>
     </section>
 
-    <!-- Cards de Saldos Individuais -->
-    <section class="cards-resumo">
+    <!-- Cards de Saldos Individuais (Dinâmicos) -->
+    <section id="container-cards-individuais" class="cards-resumo">
       <div class="card saldo-card saldo-rute-card">
-        <h3>Saldo Rute 👩</h3>
-        <p id="saldo-rute" class="valor">R$ 0,00</p>
+        <h3 id="titulo-saldo-1">Saldo Perfil 1</h3>
+        <p id="saldo-perfil-1" class="valor">R$ 0,00</p>
       </div>
 
-      <div class="card saldo-card saldo-vanderson-card">
-        <h3>Saldo Vanderson 👨</h3>
-        <p id="saldo-vanderson" class="valor">R$ 0,00</p>
-      </div>
-    </section>
-
-    <!-- Cards de Fatura -->
-    <section class="cards-resumo">
-      <div class="card saldo-card">
-        <h3>💳 Fatura Cartão Rute</h3>
-        <p id="fatura-rute" class="valor negativo">R$ 0,00</p>
-      </div>
-
-      <div class="card saldo-card">
-        <h3>💳 Fatura Cartão Vanderson</h3>
-        <p id="fatura-vanderson" class="valor negativo">R$ 0,00</p>
+      <div id="card-saldo-2" class="card saldo-card saldo-vanderson-card">
+        <h3 id="titulo-saldo-2">Saldo Perfil 2</h3>
+        <p id="saldo-perfil-2" class="valor">R$ 0,00</p>
       </div>
     </section>
 
-    <!-- Histórico -->
+    <!-- Cards de Faturas (Dinâmicos) -->
+    <section id="container-cards-faturas" class="cards-resumo">
+      <div class="card saldo-card">
+        <h3 id="titulo-fatura-1">💳 Fatura Perfil 1</h3>
+        <p id="fatura-perfil-1" class="valor negativo">R$ 0,00</p>
+      </div>
+
+      <div id="card-fatura-2" class="card saldo-card">
+        <h3 id="titulo-fatura-2">💳 Fatura Perfil 2</h3>
+        <p id="fatura-perfil-2" class="valor negativo">R$ 0,00</p>
+      </div>
+    </section>
+
+    <!-- Histórico de Transações -->
     <section class="card historico-card">
       <h2>Histórico de Transações</h2>
       <ul id="lista-transacoes" class="lista"></ul>
@@ -229,6 +260,6 @@
 
   </main>
 
-  <script type="module" src="script.js?v=20"></script>
+  <script type="module" src="script.js?v=21"></script>
 </body>
 </html>

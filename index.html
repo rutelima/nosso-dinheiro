@@ -5,32 +5,62 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nosso Dinheiro 💰</title>
 
-  <!-- Configurações para aplicativo no iPhone / Android (PWA) -->
+  <!-- Configurações PWA -->
   <link rel="manifest" href="manifest.json">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="NossoDinheiro 💰">
 
-  <!-- Ícones para iOS (iPhone / Safari) e Android -->
+  <!-- Ícones -->
   <link rel="apple-touch-icon" href="icon.png?v=3">
-  <link rel="apple-touch-icon" sizes="180x180" href="icon.png?v=3">
-  <link rel="apple-touch-icon" sizes="152x152" href="icon.png?v=3">
-  <link rel="apple-touch-icon" sizes="120x120" href="icon.png?v=3">
   <link rel="icon" type="image/png" href="icon.png?v=3">
 
-  <!-- Estilos CSS (Versão v=5 para novos componentes de limite e progresso) -->
-  <link rel="stylesheet" href="style.css?v=5">
+  <!-- Estilos CSS (v=6) -->
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 
-  <main class="container">
-    <header>
-      <h1>Nosso Dinheiro 💰</h1>
-      <p>Resumo financeiro do casal</p>
+  <!-- TELA DE LOGIN / AUTENTICAÇÃO -->
+  <div id="secao-auth" class="auth-container">
+    <div class="card auth-card">
+      <h2>Nosso Dinheiro 💰</h2>
+      <p id="auth-subtitulo">Entre com a sua conta para acessar o controle financeiro.</p>
+
+      <form id="form-auth">
+        <div class="grupo-input">
+          <label for="auth-email">E-mail:</label>
+          <input type="email" id="auth-email" placeholder="seuemail@exemplo.com" required>
+        </div>
+
+        <div class="grupo-input">
+          <label for="auth-senha">Senha:</label>
+          <input type="password" id="auth-senha" placeholder="******" required minlength="6">
+        </div>
+
+        <p id="auth-erro" class="mensagem-erro"></p>
+
+        <button type="submit" id="btn-auth-submit" class="btn-salvar">Entrar</button>
+      </form>
+
+      <div class="auth-toggle">
+        <span id="texto-toggle">Ainda não tem conta?</span>
+        <button id="btn-toggle-auth" type="button">Cadastrar-se</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTEÚDO DO APLICATIVO (Inicia Oculto até Fazer Login) -->
+  <main id="app-principal" class="container esconde-app">
+    <header class="header-com-usuario">
+      <div>
+        <h1>Nosso Dinheiro 💰</h1>
+        <p id="usuario-logado-email">Conectado como...</p>
+      </div>
+      <button id="btn-logout" class="btn-logout">Sair 🚪</button>
     </header>
 
-    <!-- NOVO PAINEL: Gastos do Mês, Limite e Média Diária -->
+    <!-- PAINEL: Gastos do Mês, Limite e Média Diária -->
     <section class="card painel-limite-card">
       <div class="header-limite">
         <h2>Gastos do Mês</h2>
@@ -154,7 +184,6 @@
         <p id="total-despesas" class="valor negativo">R$ 0,00</p>
       </div>
 
-      <!-- Saldo Geral com a Mistura em Degradê de Rosa + Azul -->
       <div class="card saldo-card saldo-destaque">
         <h3>Saldo Restante (Geral)</h3>
         <p id="saldo-total" class="valor">R$ 0,00</p>
@@ -166,7 +195,7 @@
       </div>
     </section>
 
-    <!-- Cards de Saldos Individuais (Rute Rosa / Vanderson Azul) -->
+    <!-- Cards de Saldos Individuais -->
     <section class="cards-resumo">
       <div class="card saldo-card saldo-rute-card">
         <h3>Saldo Rute 👩</h3>
@@ -179,7 +208,7 @@
       </div>
     </section>
 
-    <!-- Cards de Fatura do Cartão de Crédito -->
+    <!-- Cards de Fatura -->
     <section class="cards-resumo">
       <div class="card saldo-card">
         <h3>💳 Fatura Cartão Rute</h3>
@@ -192,7 +221,7 @@
       </div>
     </section>
 
-    <!-- Histórico de Transações -->
+    <!-- Histórico -->
     <section class="card historico-card">
       <h2>Histórico de Transações</h2>
       <ul id="lista-transacoes" class="lista"></ul>
@@ -200,6 +229,6 @@
 
   </main>
 
-  <script type="module" src="script.js?v=17"></script>
+  <script type="module" src="script.js?v=20"></script>
 </body>
 </html>
